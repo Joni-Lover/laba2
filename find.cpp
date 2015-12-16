@@ -7,13 +7,12 @@
 
 #define NAME_MAX 4096
 
-int findFile(const char *filename, const char *dirname)
+int findFile(const char *filename, const char *dirname, int num_fd)
 {
   DIR *dir_for_find;
   struct stat info;
   struct dirent *entry;
   char longest_name[NAME_MAX];
-  int num_fd;
 
   if (!(dir_for_find = opendir(dirname)))
       _exit;
@@ -31,7 +30,7 @@ int findFile(const char *filename, const char *dirname)
         strncpy(longest_name, dirname, NAME_MAX);
         strncat(longest_name, "/", NAME_MAX);
         strncat(longest_name, entry->d_name, NAME_MAX);
-        findFile(filename, longest_name);
+        findFile(filename, longest_name, num_fd);
       }
       else if ( strcmp(entry->d_name, filename)== 0 )
       {
@@ -39,11 +38,14 @@ int findFile(const char *filename, const char *dirname)
         strncpy(longest_name, dirname, NAME_MAX);
         strncat(longest_name, "/", NAME_MAX);
         strncat(longest_name, entry->d_name, NAME_MAX);
+        stat(longest_name, &info);
         printf ("File is found: %s\n", longest_name);
-        printf ("Count of checked files: %i\n", num_fd);
+//        printf ("Size in bytes: %s\n Time created: %n\n Permissions: %s\n Number of index: %s\n\n", info.st_size, info.st_ctime, info.st_mode, info.st_ino);
+        printf ("Size in bytes: %li\n", info.st_size);
       }
    }
   closedir(dir_for_find);
+  return num_fd;
 };
 
 int main(int argc, char **argv)
@@ -51,6 +53,7 @@ int main(int argc, char **argv)
   struct stat info;
   char filename[NAME_MAX];
   char dirname[NAME_MAX];
+  int num;
 
   if ( argc < 3 ) {
     // Check number arguments
@@ -69,6 +72,7 @@ int main(int argc, char **argv)
     else {
       printf ( "%s is no directory\n", argv[1] );
     }
-    findFile(filename, dirname);
+    num=findFile(filename, dirname, 0);
+    printf ("Count of checked files: %i\n", num);
   }
 };
