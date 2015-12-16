@@ -35,8 +35,12 @@ int findFile(const char *filename, const char *dirname)
       }
       else if ( strcmp(entry->d_name, filename)== 0 )
       {
-        printf ("File is found: %s/n", entry->d_name);
-        printf ("Count of checked files: %i/n", num_fd);
+        // Prepend the current directory and recurse
+        strncpy(longest_name, dirname, NAME_MAX);
+        strncat(longest_name, "/", NAME_MAX);
+        strncat(longest_name, entry->d_name, NAME_MAX);
+        printf ("File is found: %s\n", longest_name);
+        printf ("Count of checked files: %i\n", num_fd);
       }
    }
   closedir(dir_for_find);
