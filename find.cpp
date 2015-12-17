@@ -9,13 +9,15 @@
 
 #define MAX 4096 //max namelenth
 
-int findFile(const char *filename, const char *dirname, int num_fd)
+int * findFile(char *filename, char *dirname, int num_fd)
 {
   DIR *dir_for_find;
   struct stat info;
   struct dirent *entry;
   char *date;
   char full_path[MAX];
+  static int num[2];
+  num[0] = num_fd;
 
   if (!(dir_for_find = opendir(dirname)))
     exit(EXIT_FAILURE);
@@ -25,28 +27,28 @@ int findFile(const char *filename, const char *dirname, int num_fd)
     // Don't descend up the tree or include the current directory
     if ( !strcmp(entry->d_name, ".") ) continue;
     if ( !strcmp(entry->d_name, "..") ) continue;
-      num_fd++;
+      num[0]++;
       if ( entry->d_type == DT_DIR ) {
         // Prepend the current directory and recurse
         strncpy(full_path, dirname, MAX);
-        strncat(full_path, "/", MAX);
+        if ( strrchr(dirname, '/')-dirname+1 != strlen(dirname) ) strncat(full_path, "/", MAX);
         strncat(full_path, entry->d_name, MAX);
-        findFile(filename, full_path, num_fd);
+        num[0]=findFile(filename, full_path, num[0])[0];
       }
       else if ( strcmp(entry->d_name, filename)== 0 ) {
+        num[1]++;
         // Prepend the current full path
         strncpy(full_path, dirname, MAX);
-        strncat(full_path, "/", MAX);
+        if ( strrchr(dirname, '/')-dirname+1 != strlen(dirname) ) strncat(full_path, "/", MAX);
         strncat(full_path, entry->d_name, MAX);
         stat(full_path, &info);
-
         printf ("File is found: %s\n", full_path);
         date = asctime(localtime(&info.st_ctime));
         printf (" Size in bytes: %ld\n Time created: %s Permissions: %o\n Number of index: %lu\n\n", info.st_size, date, info.st_mode, info.st_ino);
       }
    }
   closedir(dir_for_find);
-  return num_fd;
+  return num;
 };
 
 int main(int argc, char **argv)
@@ -54,12 +56,12 @@ int main(int argc, char **argv)
   struct stat info;
   char filename[MAX];
   char dirname[MAX];
-  int num;
+  int *num;
 
   if ( argc != 3 ) {
     // Check number arguments
     printf ("Error count arguments\n");
-    fprintf(stderr, "Example usage: %s /root id_rsa.pub\n\n", argv[0]);
+    fprintf(stderr, "Example usage: %s /root id_rsa.pub\n", argv[0]);
     exit(EXIT_FAILURE);
   }
   else {
@@ -77,8 +79,9 @@ int main(int argc, char **argv)
       fprintf (stderr, "%s is no directory\n", argv[1] );
       exit(EXIT_FAILURE);
     }
-    num=findFile(filename, dirname, 0);
-    printf ("Count of checked files: %i\n", num);
+    num = findFile(filename, dirname, 0);
+    if ( *(num+1) == 0 ) printf("File not found.\n");
+    printf ("Count of checked files and directories: %i\n", *(num+0));
 
     exit(EXIT_SUCCESS);
   }
